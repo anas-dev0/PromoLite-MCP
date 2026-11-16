@@ -4,7 +4,9 @@
   "description": "",
   "scripts": {
     "generate-data": "tsx scripts/generate-data.ts",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start": "node dist/server/stdio.js",
+    "typecheck": "tsc -p tsconfig.scripts.json",
     "smoke": "tsx scripts/smoke-stdio.ts",
     "inspect": "npx @modelcontextprotocol/inspector npx tsx src/server/stdio.ts"
   },

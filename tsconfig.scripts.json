@@ -1,0 +1,7 @@
+{
+  // Type-check only (no output): covers src/ AND scripts/. The real build (tsconfig.json) compiles src/ only,
+  // so dist/server/stdio.js lands where data.ts expects (two folders below the project root).
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "rootDir": ".", "noEmit": true, "declaration": false, "declarationMap": false },
+  "include": ["src", "scripts"]
+}
