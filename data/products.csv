@@ -1,0 +1,61 @@
+product_id,name,category,base_price
+P001,Whole Milk 1L,Dairy,2.65
+P002,Skim Milk 1L,Dairy,1.66
+P003,Plain Yogurt 4-pack,Dairy,2.76
+P004,Fruit Yogurt 4-pack,Dairy,6.46
+P005,Fresh Cheese 200g,Dairy,5.35
+P006,Feta 250g,Dairy,6.48
+P007,Butter 250g,Dairy,4.07
+P008,Cream 20cl,Dairy,2.16
+P009,Labneh 300g,Dairy,2.54
+P010,Chocolate Milk 50cl,Dairy,4.56
+P011,Sparkling Water 1.5L,Beverages,4.62
+P012,Still Water 1.5L,Beverages,0.92
+P013,Orange Juice 1L,Beverages,1.25
+P014,Apple Juice 1L,Beverages,1.11
+P015,Cola 1L,Beverages,3.02
+P016,Lemon Soda 1L,Beverages,3.99
+P017,Iced Tea 50cl,Beverages,3.39
+P018,Energy Drink 25cl,Beverages,2.35
+P019,Mint Syrup 75cl,Beverages,2.68
+P020,Pomegranate Juice 1L,Beverages,4.83
+P021,Olive Oil 1L,Pantry,17.5
+P022,Olive Oil 5L,Pantry,80
+P023,Harissa 380g,Pantry,2.9
+P024,Couscous 1kg,Pantry,2.4
+P025,Spaghetti 500g,Pantry,1.2
+P026,Tomato Paste 400g,Pantry,2.1
+P027,Tuna in Oil 160g,Pantry,4.2
+P028,Chickpeas 400g,Pantry,1.9
+P029,Sugar 1kg,Pantry,2
+P030,Dates 500g,Pantry,9.5
+P031,Baguette,Bakery,7.01
+P032,Whole Wheat Loaf,Bakery,4.88
+P033,Croissant 4-pack,Bakery,8.55
+P034,Brioche,Bakery,0.87
+P035,Tabouna Bread,Bakery,7.1
+P036,Pita 6-pack,Bakery,8.04
+P037,Biscuits 300g,Bakery,7.26
+P038,Madeleines 250g,Bakery,0.89
+P039,Sponge Cake,Bakery,1.18
+P040,Makroud 500g,Bakery,4.64
+P041,Potato Chips 150g,Snacks,6.22
+P042,Salted Peanuts 200g,Snacks,3.9
+P043,Sunflower Seeds 200g,Snacks,2.46
+P044,Chocolate Bar 100g,Snacks,3.14
+P045,Wafer Rolls 150g,Snacks,3.4
+P046,Popcorn 100g,Snacks,5.3
+P047,Cashews 150g,Snacks,4.89
+P048,Gummy Bears 200g,Snacks,6.29
+P049,Granola Bar 6-pack,Snacks,7.03
+P050,Dried Figs 250g,Snacks,4.24
+P051,Dish Soap 750ml,Household,19.62
+P052,Laundry Powder 3kg,Household,3.34
+P053,Bleach 2L,Household,6.94
+P054,Paper Towels 4-roll,Household,4.45
+P055,Toilet Paper 12-roll,Household,20.17
+P056,Sponges 5-pack,Household,10.66
+P057,Trash Bags 30,Household,4.67
+P058,Glass Cleaner 500ml,Household,9.58
+P059,Fabric Softener 2L,Household,17.89
+P060,Air Freshener,Household,9.24

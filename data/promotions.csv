@@ -1,0 +1,26 @@
+promo_id,name,type,discount_pct,start,end,category,region
+PR01,Winter Dairy Days,percent_off,15,2025-02-10,2025-02-23,Dairy,all
+PR02,Spring Cleaning,percent_off,20,2025-03-03,2025-03-16,Household,all
+PR03,Ramadan Pantry Basket,bundle,20,2025-03-03,2025-03-23,Pantry,all
+PR04,Ramadan Drinks Offer,percent_off,25,2025-03-10,2025-03-23,Beverages,all
+PR05,Eid Bakery Treats,bogo,50,2025-03-24,2025-03-30,Bakery,all
+PR06,Snack Attack,percent_off,30,2025-04-07,2025-04-20,Snacks,North
+PR07,Easter Break Chocolate,percent_off,20,2025-04-14,2025-04-27,Snacks,North
+PR08,Olive Harvest Special,percent_off,18,2025-05-05,2025-05-18,Pantry,South
+PR09,Summer Fresh Dairy,bogo,50,2025-06-02,2025-06-15,Dairy,Centre
+PR10,Dairy Mega Deal,percent_off,25,2025-06-09,2025-06-22,Dairy,all
+PR11,Summer Cooler Sale,percent_off,30,2025-06-23,2025-07-13,Beverages,all
+PR12,Beach Pack Beverages,bundle,15,2025-07-07,2025-07-20,Beverages,South
+PR13,Bakery Weekend Bundle,bundle,15,2025-07-28,2025-08-10,Bakery,Centre
+PR14,August Household Refresh,percent_off,15,2025-08-04,2025-08-17,Household,North
+PR15,Back to School Snacks,percent_off,25,2025-09-01,2025-09-14,Snacks,all
+PR16,School Lunch Bakery,bogo,50,2025-09-08,2025-09-21,Bakery,all
+PR17,Bakery Rentree Deal,percent_off,20,2025-09-15,2025-09-28,Bakery,North
+PR18,Autumn Pantry Stock-up,percent_off,15,2025-10-06,2025-10-19,Pantry,all
+PR19,Olive Oil Festival,percent_off,22,2025-10-13,2025-10-26,Pantry,Centre
+PR20,Fresh Start Household,bundle,20,2025-11-03,2025-11-16,Household,all
+PR21,Black Friday Beverages,percent_off,30,2025-11-24,2025-11-30,Beverages,all
+PR22,Black Friday Snacks,percent_off,35,2025-11-24,2025-11-30,Snacks,all
+PR23,Winter Warmers Dairy,percent_off,12,2025-12-01,2025-12-14,Dairy,North
+PR24,Holiday Bakery Box,bundle,25,2025-12-15,2025-12-28,Bakery,all
+PR25,New Year Pantry,percent_off,18,2025-12-15,2025-12-28,Pantry,South
