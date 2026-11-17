@@ -1,3 +1,4 @@
+import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { salesTrend, searchProducts, topPromotions, UserError } from "./data.js";
@@ -5,6 +6,7 @@ import {
   SalesTrendInput, SalesTrendOutput, SearchProductsInput, SearchProductsOutput,
   TopPromotionsInput, TopPromotionsOutput,
 } from "./schemas.js";
+import { registerViews, TABLE_URI } from "./ui.js";
 
 const text = (t: string) => [{ type: "text" as const, text: t }];
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(0)}%`;
@@ -21,7 +23,7 @@ async function guarded<T extends object>(run: () => T | Promise<T>) {
 
 /** Builds the MCP server. Transport-agnostic: stdio.ts (and http.ts on Day 3) connect it. */
 export function createServer() {
-  const server = new McpServer({ name: "promolite", version: "0.2.0" });
+  const server = new McpServer({ name: "promolite", version: "0.3.0" });
 
   server.registerTool(
     "ping",
@@ -32,7 +34,12 @@ export function createServer() {
     async ({ name }) => ({ content: text(`pong ${name ?? ""} at ${new Date().toISOString()}`) }),
   );
 
-  server.registerTool(
+  registerViews(server);
+
+  // registerAppTool = registerTool + `_meta.ui.resourceUri`: "when this tool is called, show this view".
+  // The handler still returns a complete text answer, so hosts without view support keep working.
+  registerAppTool(
+    server,
     "top_promotions",
     {
       title: "Top promotions by uplift",
@@ -42,6 +49,7 @@ export function createServer() {
         "Dates are ISO (YYYY-MM-DD); the dataset covers calendar year 2025.",
       inputSchema: TopPromotionsInput,
       outputSchema: TopPromotionsOutput,
+      _meta: { ui: { resourceUri: TABLE_URI } },
     },
     ({ from, to, limit }) =>
       guarded(() => {

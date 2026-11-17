@@ -20,7 +20,16 @@ const call = async (title: string, name: string, a: Record<string, unknown>, ful
 };
 
 console.log(`MODE: ${built ? "built dist/" : "tsx src/"}`);
-console.log("TOOLS:", (await client.listTools()).tools.map((t) => t.name).join(", "));
+const tools = (await client.listTools()).tools;
+console.log("TOOLS:", tools.map((t) => t.name).join(", "));
+console.log("top_promotions _meta:", JSON.stringify(tools.find((t) => t.name === "top_promotions")?._meta));
+const resources = (await client.listResources()).resources;
+console.log("RESOURCES:", resources.map((r) => `${r.uri} (${r.mimeType})`).join(", "));
+for (const r of resources) {
+  const res: any = await client.readResource({ uri: r.uri });
+  const c = res.contents[0];
+  console.log(`read ${r.uri}: mime=${c.mimeType}, ${c.text.length} chars, starts with: ${JSON.stringify(c.text.slice(0, 15))}`);
+}
 await call("ping", "ping", { name: "anas" }, true);
 await call("top_promotions Q2", "top_promotions", { from: "2025-04-01", to: "2025-06-30" }, true);
 await call("search 'olive oil'", "search_products", { query: "olive oil" }, true);
