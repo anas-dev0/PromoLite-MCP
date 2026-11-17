@@ -56,6 +56,7 @@ export const TrendPointSchema = z.object({
   units: z.number(),
   price: z.number().describe("Average unit price that week"),
   promoId: z.string().nullable().describe("Promotion active that week, or null"),
+  promoName: z.string().nullable().describe("Name of that promotion, or null"),
 });
 export type TrendPoint = z.infer<typeof TrendPointSchema>;
 

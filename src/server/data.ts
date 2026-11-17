@@ -171,15 +171,20 @@ export function salesTrend(productId: string, store?: string) {
     byWeek.set(row.date, w);
   }
 
+  const promoNames = new Map(ds.promos.map((p) => [p.promoId, p.name]));
   const points: TrendPoint[] = [...byWeek.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, w]) => ({
-      week,
-      units: w.units,
-      price: Math.round((w.revenue / w.units) * 100) / 100, // units-weighted average price
+    .map(([week, w]) => {
       // if several stores run different promos, report the most widespread one
-      promoId: [...w.promos.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
-    }));
+      const promoId = [...w.promos.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      return {
+        week,
+        units: w.units,
+        price: Math.round((w.revenue / w.units) * 100) / 100, // units-weighted average price
+        promoId,
+        promoName: promoId ? (promoNames.get(promoId) ?? null) : null,
+      };
+    });
 
   return { productId, productName: product.name, store: st ? st.city : "All stores", points };
 }

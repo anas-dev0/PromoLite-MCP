@@ -3,7 +3,10 @@
  * (That is what lets Day 6 reuse it in the standalone "Cora panel" page and Day 7 test it with Testing Library.)
  */
 import { useMemo, useState } from "react";
-import type { PromoResult } from "../../server/schemas.js";
+import type { PromoResult } from "../../../server/schemas.js";
+import { formatNumber, formatPct } from "../format.js";
+import { Badge } from "./Badge.js";
+import { EmptyState } from "./States.js";
 
 type Key = "name" | "type" | "discountPct" | "category" | "region" | "uplift" | "incrementalUnits";
 
@@ -23,8 +26,8 @@ const COLUMNS: Column[] = [
   { key: "incrementalUnits", label: "Extra units", numeric: true },
 ];
 
-export const formatPct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(0)}%`;
 const TYPE_LABEL: Record<string, string> = { percent_off: "% off", bogo: "BOGO", bundle: "Bundle" };
+const TYPE_TONE: Record<string, "neutral" | "accent" | "pos"> = { percent_off: "accent", bogo: "pos", bundle: "neutral" };
 
 export function PromoTable({ rows }: { rows: PromoResult[] }) {
   // Default: best uplift first. Clicking a header sorts by it; clicking again flips the direction.
@@ -46,9 +49,10 @@ export function PromoTable({ rows }: { rows: PromoResult[] }) {
         : { key: col.key, dir: col.numeric ? "desc" : "asc" },
     );
 
-  if (rows.length === 0) return <p className="state">No promotions in this period.</p>;
+  if (rows.length === 0) return <EmptyState label="No promotions in this period." />;
 
   return (
+    <div className="table-wrap">
     <table className="promo-table">
       <thead>
         <tr>
@@ -75,16 +79,17 @@ export function PromoTable({ rows }: { rows: PromoResult[] }) {
               {r.name} <span className="id">{r.promoId}</span>
             </td>
             <td>
-              <span className={`badge badge-${r.type}`}>{TYPE_LABEL[r.type] ?? r.type}</span>
+              <Badge tone={TYPE_TONE[r.type] ?? "neutral"}>{TYPE_LABEL[r.type] ?? r.type}</Badge>
             </td>
             <td className="num">{r.discountPct}%</td>
             <td>{r.category}</td>
             <td>{r.region}</td>
             <td className={`num ${r.uplift >= 0 ? "pos" : "neg"}`}>{formatPct(r.uplift)}</td>
-            <td className="num">{r.incrementalUnits.toLocaleString("en-US")}</td>
+            <td className="num">{formatNumber(r.incrementalUnits)}</td>
           </tr>
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

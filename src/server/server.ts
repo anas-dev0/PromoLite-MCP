@@ -6,7 +6,7 @@ import {
   SalesTrendInput, SalesTrendOutput, SearchProductsInput, SearchProductsOutput,
   TopPromotionsInput, TopPromotionsOutput,
 } from "./schemas.js";
-import { registerViews, TABLE_URI } from "./ui.js";
+import { registerViews, TABLE_URI, TREND_URI } from "./ui.js";
 
 const text = (t: string) => [{ type: "text" as const, text: t }];
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(0)}%`;
@@ -23,7 +23,7 @@ async function guarded<T extends object>(run: () => T | Promise<T>) {
 
 /** Builds the MCP server. Transport-agnostic: stdio.ts (and http.ts on Day 3) connect it. */
 export function createServer() {
-  const server = new McpServer({ name: "promolite", version: "0.3.0" });
+  const server = new McpServer({ name: "promolite", version: "0.4.0" });
 
   server.registerTool(
     "ping",
@@ -72,7 +72,8 @@ export function createServer() {
       }),
   );
 
-  server.registerTool(
+  registerAppTool(
+    server,
     "sales_trend",
     {
       title: "Weekly sales trend",
@@ -83,19 +84,27 @@ export function createServer() {
         "The store can be an ID (S07) or a city name (Sfax); omit it to sum all stores.",
       inputSchema: SalesTrendInput,
       outputSchema: SalesTrendOutput,
+      _meta: { ui: { resourceUri: TREND_URI } },
     },
     ({ productId, store }) =>
       guarded(() => {
         const trend = salesTrend(productId, store);
-        const total = trend.points.reduce((s, p) => s + p.units, 0);
-        const promoWeeks = trend.points.filter((p) => p.promoId);
-        const peak = trend.points.reduce((a, b) => (b.units > a.units ? b : a));
-        const lines = trend.points.map((p) => `${p.week}: ${p.units} units @ ${p.price}${p.promoId ? `  [promo ${p.promoId}]` : ""}`);
+        const { points } = trend;
+        const total = points.reduce((s, p) => s + p.units, 0);
+        const promo = points.filter((p) => p.promoId);
+        const normal = points.filter((p) => !p.promoId);
+        const avg = (ps: typeof points) => (ps.length ? ps.reduce((s, p) => s + p.units, 0) / ps.length : 0);
+        const peak = points.reduce((a, b) => (b.units > a.units ? b : a));
+        const lift =
+          promo.length && normal.length && avg(normal) > 0
+            ? ` Promoted weeks averaged ${Math.round(avg(promo))} units vs ${Math.round(avg(normal))} otherwise (${pct(avg(promo) / avg(normal) - 1)}).`
+            : "";
+        const lines = points.map((p) => `${p.week}: ${p.units} units @ ${p.price}${p.promoId ? `  [promo ${p.promoId}: ${p.promoName}]` : ""}`);
         return {
           content: text(
             `Sales trend for ${trend.productName} (${trend.productId}), ${trend.store}, 2025.\n` +
-            `Total ${total} units over ${trend.points.length} weeks; ${promoWeeks.length} promoted weeks; ` +
-            `peak ${peak.units} units in week of ${peak.week}.\n\n${lines.join("\n")}`),
+            `Total ${total} units over ${points.length} weeks; ${promo.length} promoted weeks; ` +
+            `peak ${peak.units} units in the week of ${peak.week}.${lift}\n\n${lines.join("\n")}`),
           structuredContent: trend,
         };
       }),

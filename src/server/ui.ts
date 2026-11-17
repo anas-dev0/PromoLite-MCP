@@ -12,6 +12,7 @@ import { ROOT } from "./data.js";
 const VIEWS_DIR = path.join(ROOT, "dist/views");
 
 export const TABLE_URI = "ui://promolite/top-promotions";
+export const TREND_URI = "ui://promolite/sales-trend";
 
 async function readView(name: string): Promise<string> {
   try {
@@ -21,15 +22,14 @@ async function readView(name: string): Promise<string> {
   }
 }
 
+/** One resource per view. Read on every request, so rebuilding a view needs no server restart. */
+function registerView(server: McpServer, title: string, uri: string, folder: string, description: string) {
+  registerAppResource(server, title, uri, { description }, async () => ({
+    contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: await readView(folder) }],
+  }));
+}
+
 export function registerViews(server: McpServer) {
-  registerAppResource(
-    server,
-    "Top promotions table",
-    TABLE_URI,
-    { description: "Sortable table of promotions ranked by uplift" },
-    async () => ({
-      // Read on every request: rebuilding the view during development needs no server restart.
-      contents: [{ uri: TABLE_URI, mimeType: RESOURCE_MIME_TYPE, text: await readView("table") }],
-    }),
-  );
+  registerView(server, "Top promotions table", TABLE_URI, "table", "Sortable table of promotions ranked by uplift");
+  registerView(server, "Sales trend chart", TREND_URI, "trend", "Weekly sales line with promotion weeks shaded");
 }

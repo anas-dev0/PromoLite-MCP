@@ -1,0 +1,68 @@
+/*
+ * Shared design tokens + component styles, used by every view (and, on Day 6, the standalone panel page).
+ *
+ * THEMING: every color is a semantic token (--bg, --text, ...) defined as
+ *     var(<host variable>, <fallback>)
+ * When the host provides its style variables (--color-background-primary, ...), useHostStyles() sets them on
+ * <html> and our tokens pick them up. When it does not, the fallback applies. light-dark() picks the light or
+ * dark fallback from the `color-scheme` that useHostStyles() sets from the host's theme (or from the OS
+ * preference if the host says nothing).
+ */
+:root {
+  color-scheme: light dark;
+  --bg: var(--color-background-primary, light-dark(#ffffff, #1b1f24));
+  --surface: var(--color-background-secondary, light-dark(#f6f8fa, #262c36));
+  --text: var(--color-text-primary, light-dark(#1f2328, #e6edf3));
+  --muted: var(--color-text-secondary, light-dark(#59636e, #9198a1));
+  --border: var(--color-border-primary, light-dark(#d1d9e0, #3d444d));
+  --accent: var(--color-text-info, light-dark(#0969da, #58a6ff));
+  --pos: var(--color-text-success, light-dark(#1a7f37, #3fb950));
+  --neg: var(--color-text-danger, light-dark(#cf222e, #f85149));
+  --promo-band: color-mix(in srgb, var(--accent) 16%, transparent);
+  --radius: var(--border-radius-md, 8px);
+  font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
+  font-size: var(--font-text-sm-size, 14px);
+  line-height: 1.4;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 12px; color: var(--text); background: var(--bg); }
+h1 { font-size: var(--font-heading-md-size, 16px); margin: 0; font-weight: 600; }
+h1 small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 0.85em; }
+
+/* ---- Card / header / states ---- */
+.card { display: flex; flex-direction: column; gap: 10px; }
+.card-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+.state { color: var(--muted); padding: 16px 0; margin: 0; }
+.state.error { color: var(--neg); }
+.stats { color: var(--muted); margin: 0; }
+
+/* ---- Badge ---- */
+.badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.badge-accent { color: var(--accent); border-color: var(--accent); }
+.badge-pos { color: var(--pos); border-color: var(--pos); }
+
+/* ---- Promo table ---- */
+.table-wrap { overflow-x: auto; }
+.promo-table { width: 100%; border-collapse: collapse; }
+.promo-table th, .promo-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.promo-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.promo-table th button { all: unset; cursor: pointer; font-weight: 600; color: var(--text); }
+.promo-table th button:hover, .promo-table th button:focus-visible { color: var(--accent); outline: 1px solid var(--accent); outline-offset: 2px; }
+.promo-table tbody tr:hover { background: var(--surface); }
+.id { color: var(--muted); font-size: 12px; margin-left: 4px; }
+.pos { color: var(--pos); }
+.neg { color: var(--neg); }
+
+/* ---- Trend chart ---- */
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.segmented button { all: unset; cursor: pointer; padding: 3px 12px; color: var(--muted); }
+.segmented button + button { border-left: 1px solid var(--border); }
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--bg); font-weight: 600; }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.chart-box { height: 320px; width: 100%; } /* FIXED height: a responsive chart in an iframe with no height is 0px tall */
+.chart-legend { display: flex; gap: 14px; color: var(--muted); font-size: 12px; align-items: center; }
+.swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+.tooltip { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 10px; box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.25)); }
+.tooltip strong { display: block; margin-bottom: 4px; }
+.tooltip div { display: flex; justify-content: space-between; gap: 16px; }
+.tooltip .promo { color: var(--accent); margin-top: 4px; display: block; }
