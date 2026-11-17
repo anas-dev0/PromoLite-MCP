@@ -2,7 +2,7 @@
   "mcpServers": {
     "promolite": {
       "command": "node",
-      "args": ["C:/Users/anasw/OneDrive/Desktop/proj_uni/PromoLite-MCP/dist/server/stdio.js"]
+      "args": ["[path/to/your/project]/PromoLite-MCP/dist/server/stdio.js"]
     }
   }
 }
