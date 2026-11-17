@@ -1,0 +1,39 @@
+# Two services. Only Nginx is published to the host; the app is reachable only on the private Compose network.
+#
+#   docker compose up --build        then connect an MCP client to  http://127.0.0.1:8080/mcp
+#
+# Real deployments set ALLOWED_HOSTS (and, if a browser page must call the server, CORS_ORIGINS), e.g. in a `.env` file
+# next to this one:    ALLOWED_HOSTS=localhost,127.0.0.1,mcp.example.com
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}   # hostnames the Host header may carry (Nginx forwards the client's)
+      CORS_ORIGINS: ${CORS_ORIGINS:-}                        # extra browser origins; empty = local dev tools only
+      TRUST_PROXY: "1"                                       # one proxy (Nginx) sits in front: read the client IP from X-Forwarded-For
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-300}   # second layer behind Nginx's limit
+    expose:
+      - "3000"                       # visible to Nginx on the Compose network only, NOT published to the host
+    restart: unless-stopped
+    # Container hardening: the app only reads files and serves HTTP.
+    read_only: true                  # the filesystem is read-only
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL                          # no Linux capabilities
+    security_opt:
+      - no-new-privileges:true
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"                    # the only entry point
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy   # wait for the app's HEALTHCHECK before accepting traffic
+    restart: unless-stopped

@@ -24,10 +24,26 @@ async function readView(name: string): Promise<string> {
   }
 }
 
+/**
+ * STRICT CSP: the views declare that they need NOTHING from the network. Each list maps to a CSP directive:
+ *   connectDomains  -> connect-src  (fetch / XHR / WebSocket)      resourceDomains -> img/script/style/font/media-src
+ *   frameDomains    -> frame-src    (nested iframes)               baseUriDomains  -> base-uri
+ * An empty list means "none". The spec already treats omitted fields as empty (the secure default), but saying it
+ * explicitly documents the policy in code and lets a test lock it in. This is possible because every view is ONE
+ * self-contained HTML file (JS and CSS inlined, no CDN fonts); the view's data arrives through the host's postMessage
+ * bridge, not through the network.
+ */
+export const STRICT_CSP: Record<"connectDomains" | "resourceDomains" | "frameDomains" | "baseUriDomains", string[]> = {
+  connectDomains: [], resourceDomains: [], frameDomains: [], baseUriDomains: [],
+};
+/** A fresh copy per use, so nobody can mutate the shared policy by accident. */
+const strictUiMeta = () => ({ ui: { csp: { connectDomains: [...STRICT_CSP.connectDomains], resourceDomains: [...STRICT_CSP.resourceDomains], frameDomains: [...STRICT_CSP.frameDomains], baseUriDomains: [...STRICT_CSP.baseUriDomains] } } });
+
 /** One resource per view. Read on every request, so rebuilding a view needs no server restart. */
 function registerView(server: McpServer, title: string, uri: string, folder: string, description: string) {
-  registerAppResource(server, title, uri, { description }, async () => ({
-    contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: await readView(folder) }],
+  registerAppResource(server, title, uri, { description, _meta: strictUiMeta() }, async () => ({
+    // The content item's _meta takes precedence over the listing's, so it carries the policy too.
+    contents: [{ uri, mimeType: RESOURCE_MIME_TYPE, text: await readView(folder), _meta: strictUiMeta() }],
   }));
 }
 

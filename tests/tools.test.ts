@@ -198,6 +198,27 @@ describe("UI resources (MCP Apps)", () => {
     }
   });
 
+  it("every view declares a STRICT CSP: nothing may be loaded from the network, on the listing and on the content", async () => {
+    const strict = { connectDomains: [], resourceDomains: [], frameDomains: [], baseUriDomains: [] };
+    const resources = (await real.client.listResources()).resources;
+    for (const r of resources) {
+      expect((r._meta as any)?.ui?.csp, `${r.uri} (listing)`).toEqual(strict);
+      const res: any = await real.client.readResource({ uri: r.uri });
+      expect(res.contents[0]._meta?.ui?.csp, `${r.uri} (content)`).toEqual(strict);
+    }
+  });
+
+  it("no view contains a reference to an outside origin that it could load (fonts, scripts, styles, images, fetches)", async () => {
+    // Plain strings inside library code (schema URLs, error-message links) are fine; what must NOT exist is a tag or CSS
+    // that makes the browser fetch something.
+    for (const r of (await real.client.listResources()).resources) {
+      const html: string = ((await real.client.readResource({ uri: r.uri })) as any).contents[0].text;
+      expect(html, r.uri).not.toMatch(/<(script|link|img|iframe|source|video|audio)\b[^>]*\b(src|href)=["']https?:\/\//i);
+      expect(html, r.uri).not.toMatch(/@import\s+(url\()?["']?https?:/i);
+      expect(html, r.uri).not.toMatch(/url\(\s*["']?https?:\/\//i);
+    }
+  });
+
   it("reading an unknown resource fails cleanly", async () => {
     await expect(real.client.readResource({ uri: "ui://promolite/nope" })).rejects.toThrow();
   });
