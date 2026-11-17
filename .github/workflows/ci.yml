@@ -1,0 +1,29 @@
+name: CI
+
+# Runs on every push and on pull requests: install exactly what the lockfile says, type-check, build, test.
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install (exactly the versions in package-lock.json)
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build (server + views)
+        run: npm run build
+
+      - name: Test
+        run: npm test
