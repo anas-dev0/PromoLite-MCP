@@ -7,6 +7,8 @@
     "build": "tsc && npm run build:views",
     "build:server": "tsc",
     "build:views": "tsx scripts/build-views.ts",
+    "dev:panel": "vite --config vite.panel.config.ts",
+    "build:panel": "vite build --config vite.panel.config.ts",
     "dev:stdio": "tsx src/server/stdio.ts",
     "dev:http": "tsx watch src/server/http.ts",
     "start:http": "node dist/server/http.js",

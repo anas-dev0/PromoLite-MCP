@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
-import type { Product, PromoResult, TrendPoint } from "./schemas.js";
+import type { CalendarPromo, Clash, Product, PromoResult, TrendPoint } from "./schemas.js";
 
 // Absolute path built from this file's location, NOT the working directory (Claude Desktop starts the
 // server from another cwd). Works from src/server/ (tsx) and dist/server/ (built): both are 2 levels below the root.
@@ -215,4 +215,46 @@ export function searchProductsPage(query: string, category: string | undefined, 
 
 export function listStores(): { storeId: string; city: string; region: string }[] {
   return load().stores.map((s) => ({ ...s }));
+}
+
+// ------------------------------------------------------------ calendar + clashes
+
+/** Promotions whose date range overlaps [from, to], optionally for one category, ordered by start date. */
+export function promoCalendar(from: string, to: string, category?: string): CalendarPromo[] {
+  return load()
+    .promos.filter((p) => p.start <= to && p.end >= from && (!category || p.category === category))
+    .sort((a, b) => a.start.localeCompare(b.start) || a.promoId.localeCompare(b.promoId))
+    .map((p) => ({ ...p }));
+}
+
+const maxIso = (a: string, b: string) => (a > b ? a : b);
+const minIso = (a: string, b: string) => (a < b ? a : b);
+const daysBetweenInclusive = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000) + 1;
+
+/**
+ * CLASH = two promotions that
+ *   1. are on the same CATEGORY,
+ *   2. hit the same REGION (same region, or at least one of them is "all"), and
+ *   3. OVERLAP in time by at least one day:  a.start <= b.end && b.start <= a.end   (dates are inclusive).
+ * Why it matters: two promotions on the same products at once cannibalise each other.
+ */
+export function findClashes(promos: CalendarPromo[]): Clash[] {
+  const clashes: Clash[] = [];
+  for (let i = 0; i < promos.length; i++) {
+    for (let j = i + 1; j < promos.length; j++) {
+      const a = promos[i]!;
+      const b = promos[j]!;
+      const sameRegion = a.region === "all" || b.region === "all" || a.region === b.region;
+      if (a.category !== b.category || !sameRegion || !(a.start <= b.end && b.start <= a.end)) continue;
+      const overlapStart = maxIso(a.start, b.start);
+      const overlapEnd = minIso(a.end, b.end);
+      clashes.push({
+        a: a.promoId, b: b.promoId, aName: a.name, bName: b.name,
+        category: a.category,
+        region: a.region === "all" ? b.region : a.region, // the narrower of the two
+        overlapStart, overlapEnd, overlapDays: daysBetweenInclusive(overlapStart, overlapEnd),
+      });
+    }
+  }
+  return clashes.sort((x, y) => x.overlapStart.localeCompare(y.overlapStart));
 }

@@ -1,12 +1,14 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { listStores, salesTrend, searchProducts, searchProductsPage, topPromotions, UserError } from "./data.js";
 import {
-  CATEGORIES, PickProductsInput, PickProductsOutput, SalesTrendInput, SalesTrendOutput, SearchProductsInput,
+  findClashes, listStores, promoCalendar, salesTrend, searchProducts, searchProductsPage, topPromotions, UserError,
+} from "./data.js";
+import {
+  CATEGORIES, PickProductsInput, PickProductsOutput, PromoCalendarInput, PromoCalendarOutput, SalesTrendInput, SalesTrendOutput, SearchProductsInput,
   SearchProductsOutput, SearchProductsUiInput, SearchProductsUiOutput, TopPromotionsInput, TopPromotionsOutput,
 } from "./schemas.js";
-import { PICKER_URI, registerViews, TABLE_URI, TREND_URI } from "./ui.js";
+import { CALENDAR_URI, PICKER_URI, registerViews, TABLE_URI, TREND_URI } from "./ui.js";
 
 const text = (t: string) => [{ type: "text" as const, text: t }];
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(0)}%`;
@@ -23,7 +25,7 @@ async function guarded<T extends object>(run: () => T | Promise<T>) {
 
 /** Builds the MCP server. Transport-agnostic: stdio.ts (and http.ts on Day 3) connect it. */
 export function createServer() {
-  const server = new McpServer({ name: "promolite", version: "0.5.0" });
+  const server = new McpServer({ name: "promolite", version: "0.6.0" });
 
   server.registerTool(
     "ping",
@@ -184,6 +186,45 @@ export function createServer() {
         return {
           content: text(`${products.length} of ${total} product(s) match "${query}".`),
           structuredContent: { products, total },
+        };
+      }),
+  );
+
+  // ------------------------------------------------------------- Day 6: calendar
+  registerAppTool(
+    server,
+    "promo_calendar",
+    {
+      title: "Promotions calendar with clashes",
+      description:
+        "Shows the promotions running in a period on a calendar and flags CLASHES: promotions on the same category and " +
+        "region (or one of them 'all' regions) whose dates overlap by at least one day. Use when the user asks what is " +
+        "planned, or which promotions clash or overlap. Dates are ISO (YYYY-MM-DD); the dataset covers 2025. " +
+        "Optionally restrict to one category.",
+      inputSchema: PromoCalendarInput,
+      outputSchema: PromoCalendarOutput,
+      _meta: { ui: { resourceUri: CALENDAR_URI } },
+    },
+    ({ from, to, category }) =>
+      guarded(() => {
+        if (from > to) throw new UserError(`'from' (${from}) must not be after 'to' (${to}).`);
+        const promotions = promoCalendar(from, to, category);
+        const clashes = findClashes(promotions);
+        const where = (r: string) => (r === "all" ? "all regions" : r);
+        const list = promotions.length
+          ? promotions.map((p) =>
+              `- ${p.start} to ${p.end}: ${p.name} (${p.promoId}) - ${p.type} ${p.discountPct}%, ${p.category}, ${where(p.region)}`).join("\n")
+          : "No promotions in this period.";
+        const clashText = clashes.length
+          ? clashes.map((c) =>
+              `- ${c.category}, ${where(c.region)}: ${c.aName} (${c.a}) overlaps ${c.bName} (${c.b}) for ` +
+              `${c.overlapDays} day${c.overlapDays === 1 ? "" : "s"}, ${c.overlapStart} to ${c.overlapEnd}`).join("\n")
+          : "No clashes in this period.";
+        return {
+          content: text(
+            `Promotions from ${from} to ${to}${category ? ` (${category})` : ""}: ${promotions.length}.\n${list}\n\n` +
+            `Clashes (same category and region, overlapping dates): ${clashes.length}.\n${clashText}`),
+          structuredContent: { from, to, category: category ?? null, promotions, clashes },
         };
       }),
   );

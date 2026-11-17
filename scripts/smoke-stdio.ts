@@ -22,7 +22,7 @@ const call = async (title: string, name: string, a: Record<string, unknown>, ful
 console.log(`MODE: ${built ? "built dist/" : "tsx src/"}`);
 const tools = (await client.listTools()).tools;
 console.log("TOOLS:", tools.map((t) => t.name).join(", "));
-for (const name of ["top_promotions", "pick_products", "search_products_ui"]) {
+for (const name of ["top_promotions", "pick_products", "search_products_ui", "promo_calendar"]) {
   console.log(`${name} _meta:`, JSON.stringify(tools.find((t) => t.name === name)?._meta));
 }
 const resources = (await client.listResources()).resources;
@@ -42,6 +42,9 @@ await call("trend all stores", "sales_trend", { productId: "P021" });
 await call("pick_products (opens the picker)", "pick_products", { query: "olive" }, true);
 await call("search_products_ui (app-only, called directly)", "search_products_ui", { query: "olive", limit: 5 }, true);
 await call("search_products_ui empty query = browse", "search_products_ui", { query: "" }, false);
+await call("promo_calendar March (no clashes)", "promo_calendar", { from: "2025-03-01", to: "2025-03-31" }, true);
+await call("promo_calendar June (1 clash)", "promo_calendar", { from: "2025-06-01", to: "2025-06-30" }, true);
+await call("promo_calendar whole year, Dairy only", "promo_calendar", { from: "2025-01-01", to: "2025-12-31", category: "Dairy" }, true);
 await call("ERR unknown product", "sales_trend", { productId: "P999" }, true);
 await call("ERR unknown store", "sales_trend", { productId: "P021", store: "Paris" }, true);
 await call("ERR dates reversed", "top_promotions", { from: "2025-06-30", to: "2025-04-01" }, true);

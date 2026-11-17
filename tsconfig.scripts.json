@@ -3,6 +3,6 @@
   // so dist/server/stdio.js lands where data.ts expects (two folders below the project root).
   "extends": "./tsconfig.json",
   "compilerOptions": { "rootDir": ".", "noEmit": true, "declaration": false, "declarationMap": false },
-  "include": ["src", "scripts"],
+  "include": ["src", "scripts", "vite.panel.config.ts"],
   "exclude": []
 }

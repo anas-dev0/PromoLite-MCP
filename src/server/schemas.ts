@@ -120,3 +120,45 @@ export const SearchProductsUiOutput = z.object({
   total: z.number().describe("How many products match in total (may exceed products.length)"),
 });
 export type SearchProductsUiOutput = z.infer<typeof SearchProductsUiOutput>;
+
+// ------------------------------------------------------- promo_calendar (Day 6)
+export const PromoCalendarInput = z.object({
+  from: isoDate.describe("Period start, e.g. 2025-03-01"),
+  to: isoDate.describe("Period end, e.g. 2025-03-31"),
+  category: CategorySchema.optional().describe("Optional: only this category"),
+});
+
+export const CalendarPromoSchema = z.object({
+  promoId: z.string(),
+  name: z.string(),
+  type: z.string().describe("percent_off | bogo | bundle"),
+  discountPct: z.number(),
+  start: z.string(),
+  end: z.string(),
+  category: z.string(),
+  region: z.string().describe("North | Centre | South | all"),
+});
+export type CalendarPromo = z.infer<typeof CalendarPromoSchema>;
+
+/** Two promotions on the same category and region (or one of them 'all') whose dates overlap by >= 1 day. */
+export const ClashSchema = z.object({
+  a: z.string().describe("promoId of the first promotion"),
+  b: z.string().describe("promoId of the second promotion"),
+  aName: z.string(),
+  bName: z.string(),
+  category: z.string(),
+  region: z.string().describe("Region where they collide ('all' if both run everywhere)"),
+  overlapStart: z.string(),
+  overlapEnd: z.string(),
+  overlapDays: z.number().describe("Inclusive number of overlapping days"),
+});
+export type Clash = z.infer<typeof ClashSchema>;
+
+export const PromoCalendarOutput = z.object({
+  from: z.string(),
+  to: z.string(),
+  category: z.string().nullable(),
+  promotions: z.array(CalendarPromoSchema),
+  clashes: z.array(ClashSchema),
+});
+export type PromoCalendarOutput = z.infer<typeof PromoCalendarOutput>;

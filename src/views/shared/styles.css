@@ -19,6 +19,10 @@
   --pos: var(--color-text-success, light-dark(#1a7f37, #3fb950));
   --neg: var(--color-text-danger, light-dark(#cf222e, #f85149));
   --promo-band: color-mix(in srgb, var(--accent) 16%, transparent);
+  --c-percent_off: var(--accent);
+  --c-bogo: var(--pos);
+  --c-bundle: light-dark(#8250df, #bc8cff);
+  --clash-band: color-mix(in srgb, var(--neg) 32%, transparent);
   --radius: var(--border-radius-md, 8px);
   font-family: var(--font-sans, system-ui, -apple-system, "Segoe UI", sans-serif);
   font-size: var(--font-text-sm-size, 14px);
@@ -96,3 +100,33 @@ h1 small { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 0
 .state.ok { color: var(--pos); padding: 0; margin: 0; }
 .copybox { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; }
 .copybox textarea { flex: 1 1 auto; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 10px; resize: vertical; }
+
+/* ---- Promotions calendar ---- */
+.calendar { display: flex; flex-direction: column; gap: 10px; }
+.cal-nav { display: flex; align-items: center; gap: 10px; }
+.cal-nav .chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.cal-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+.cal { --label-w: 92px; min-width: 640px; }
+.cal-row, .cal-block { display: grid; grid-template-columns: var(--label-w) repeat(var(--cols), minmax(0, 1fr)); }
+.cal-head { color: var(--muted); font-size: 11px; background: var(--surface); }
+.cal-month { padding: 3px 4px; font-weight: 600; border-left: 1px solid var(--border); }
+.cal-day { text-align: center; padding: 2px 0; border-left: 1px solid color-mix(in srgb, var(--border) 50%, transparent); }
+.cal-block { border-top: 1px solid var(--border); align-items: stretch; row-gap: 2px; padding: 2px 0; position: relative; }
+.cal-label { grid-column: 1; display: flex; align-items: center; padding: 0 8px; font-weight: 600; color: var(--muted); }
+.clash-band { background: var(--clash-band); z-index: 0; pointer-events: none; border-radius: 2px; }
+.bar { --c: var(--accent); z-index: 1; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: left;
+  font: inherit; font-size: 12px; cursor: pointer; color: var(--text); padding: 0 6px; margin: 0 1px;
+  background: color-mix(in srgb, var(--c) 24%, var(--bg)); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+  border-left: 4px solid var(--c); border-radius: 4px; }
+.bar-percent_off { --c: var(--c-percent_off); }
+.bar-bogo { --c: var(--c-bogo); }
+.bar-bundle { --c: var(--c-bundle); }
+.bar-meta { color: var(--muted); }
+.bar.is-clash { outline: 2px solid var(--neg); outline-offset: -2px; }
+.bar.is-selected { box-shadow: 0 0 0 2px var(--text); }
+.bar:hover { filter: brightness(1.12); }
+.bar:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.detail { border-top: 1px solid var(--border); padding-top: 8px; }
+.clash-list { margin: 0; padding-left: 18px; }
+.clash-list li { margin: 2px 0; }
+.chip-toggle[aria-pressed] { position: static; }
