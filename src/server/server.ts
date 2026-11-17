@@ -1,9 +1,7 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import {
-  findClashes, listStores, promoCalendar, salesTrend, searchProducts, searchProductsPage, topPromotions, UserError,
-} from "./data.js";
+import { type DataStore, defaultStore, findClashes, UserError } from "./data.js";
 import {
   CATEGORIES, PickProductsInput, PickProductsOutput, PromoCalendarInput, PromoCalendarOutput, SalesTrendInput, SalesTrendOutput, SearchProductsInput,
   SearchProductsOutput, SearchProductsUiInput, SearchProductsUiOutput, TopPromotionsInput, TopPromotionsOutput,
@@ -23,8 +21,11 @@ async function guarded<T extends object>(run: () => T | Promise<T>) {
   }
 }
 
-/** Builds the MCP server. Transport-agnostic: stdio.ts (and http.ts on Day 3) connect it. */
-export function createServer() {
+/**
+ * Builds the MCP server. Transport-agnostic: stdio.ts and http.ts connect it.
+ * `data` defaults to the real dataset; tests pass a store built on tiny fixtures.
+ */
+export function createServer(data: DataStore = defaultStore) {
   const server = new McpServer({ name: "promolite", version: "0.6.0" });
 
   server.registerTool(
@@ -56,7 +57,7 @@ export function createServer() {
     ({ from, to, limit }) =>
       guarded(() => {
         if (from > to) throw new UserError(`'from' (${from}) must not be after 'to' (${to}).`);
-        const rows = topPromotions(from, to, limit);
+        const rows = data.topPromotions(from, to, limit);
         if (rows.length === 0) {
           return { content: text(`No promotions overlap ${from} to ${to}. The data covers 2025.`), structuredContent: { from, to, rows } };
         }
@@ -90,8 +91,14 @@ export function createServer() {
     },
     ({ productId, store }) =>
       guarded(() => {
-        const trend = salesTrend(productId, store);
+        const trend = data.salesTrend(productId, store);
         const { points } = trend;
+        if (points.length === 0) {
+          return {
+            content: text(`No sales recorded for ${trend.productName} (${trend.productId}) in ${trend.store}.`),
+            structuredContent: trend,
+          };
+        }
         const total = points.reduce((s, p) => s + p.units, 0);
         const promo = points.filter((p) => p.promoId);
         const normal = points.filter((p) => !p.promoId);
@@ -124,7 +131,7 @@ export function createServer() {
     },
     ({ query, category, limit }) =>
       guarded(() => {
-        const products = searchProducts(query, category, limit);
+        const products = data.searchProducts(query, category, limit);
         if (products.length === 0) {
           return { content: text(`No products match "${query}". Try fewer or different words.`), structuredContent: { products } };
         }
@@ -155,7 +162,7 @@ export function createServer() {
     },
     ({ query, category }) =>
       guarded(() => {
-        const stores = listStores();
+        const stores = data.listStores();
         const structured = { query: query ?? "", category: category ?? null, categories: [...CATEGORIES], stores };
         return {
           content: text(
@@ -182,7 +189,7 @@ export function createServer() {
     },
     ({ query, category, limit }) =>
       guarded(() => {
-        const { products, total } = searchProductsPage(query, category, limit);
+        const { products, total } = data.searchProductsPage(query, category, limit);
         return {
           content: text(`${products.length} of ${total} product(s) match "${query}".`),
           structuredContent: { products, total },
@@ -208,7 +215,7 @@ export function createServer() {
     ({ from, to, category }) =>
       guarded(() => {
         if (from > to) throw new UserError(`'from' (${from}) must not be after 'to' (${to}).`);
-        const promotions = promoCalendar(from, to, category);
+        const promotions = data.promoCalendar(from, to, category);
         const clashes = findClashes(promotions);
         const where = (r: string) => (r === "all" ? "all regions" : r);
         const list = promotions.length

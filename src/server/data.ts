@@ -1,7 +1,10 @@
 /**
  * Data layer: loads the CSVs and answers questions about them.
- * Plain TypeScript functions that know NOTHING about MCP. server.ts only validates input,
- * calls these, and formats the answer. Easy to unit-test (Day 7); a database would only change this file.
+ * Plain TypeScript that knows NOTHING about MCP. server.ts only validates input, calls these, and formats the answer.
+ *
+ * `createDataStore(dir)` builds a store over ANY data directory (tests point it at tiny hand-made fixtures);
+ * `defaultStore` is the real dataset in ./data. The old function names are still exported (they use the default store).
+ * A database would only change this file.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -38,14 +41,12 @@ interface Dataset {
 
 const REGIONS = ["North", "Centre", "South"] as const;
 
-function readCsv(file: string): Record<string, string>[] {
-  return parse(readFileSync(path.join(DATA_DIR, file), "utf8"), { columns: true, skip_empty_lines: true });
-}
+const addDays = (iso: string, n: number) =>
+  new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
-let cache: Dataset | undefined;
-
-function load(): Dataset {
-  if (cache) return cache;
+function loadDataset(dir: string): Dataset {
+  const readCsv = (file: string): Record<string, string>[] =>
+    parse(readFileSync(path.join(dir, file), "utf8"), { columns: true, skip_empty_lines: true });
 
   const products: Product[] = readCsv("products.csv").map((r) => ({
     productId: r["product_id"]!, name: r["name"]!, category: r["category"]!, basePrice: Number(r["base_price"]),
@@ -79,11 +80,8 @@ function load(): Dataset {
     series.set(row.date, cell);
     weekSet.add(row.date);
   }
-  return (cache = { products, productsById, stores, promos, salesByProduct, weekly, weeks: [...weekSet].sort() });
+  return { products, productsById, stores, promos, salesByProduct, weekly, weeks: [...weekSet].sort() };
 }
-
-const addDays = (iso: string, n: number) =>
-  new Date(Date.parse(`${iso}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 // ------------------------------------------------------------------ uplift
 
@@ -106,7 +104,7 @@ function scopeSeries(ds: Dataset, p: Promotion): Map<string, Cell> {
  * Uplift = promo-week units / baseline weekly units - 1.
  * Baseline = average of the last 4 CLEAN weeks (no promotion in the same category+region),
  * looking back up to 12 weeks. A naive "last 4 weeks" would include other promos (the clashes)
- * and understate the uplift.
+ * and understate the uplift. Returns null when there is no sales data for the promo weeks or no clean history.
  */
 function computeUplift(ds: Dataset, p: Promotion): { uplift: number; incrementalUnits: number } | null {
   const series = scopeSeries(ds, p);
@@ -128,19 +126,6 @@ function computeUplift(ds: Dataset, p: Promotion): { uplift: number; incremental
   return { uplift: promoUnits / expected - 1, incrementalUnits: Math.round(promoUnits - expected) };
 }
 
-/** Promotions overlapping [from, to], ranked by uplift (highest first). */
-export function topPromotions(from: string, to: string, limit: number): PromoResult[] {
-  const ds = load();
-  return ds.promos
-    .filter((p) => p.start <= to && p.end >= from)
-    .flatMap((p) => {
-      const m = computeUplift(ds, p);
-      return m ? [{ ...p, ...m }] : [];
-    })
-    .sort((a, b) => b.uplift - a.uplift)
-    .slice(0, limit);
-}
-
 // ------------------------------------------------------------- sales trend
 
 /** Accepts a store ID ("S07") or a city name ("Sfax", case-insensitive). */
@@ -154,46 +139,8 @@ function resolveStore(ds: Dataset, input: string): Store {
   return found;
 }
 
-/** Weekly series for one product, for one store or (store omitted) summed over all stores. */
-export function salesTrend(productId: string, store?: string) {
-  const ds = load();
-  const product = ds.productsById.get(productId);
-  if (!product) throw new UserError(`Unknown product ${productId}. Call search_products first to find a valid product ID.`);
-  const st = store === undefined ? undefined : resolveStore(ds, store);
-
-  const byWeek = new Map<string, { units: number; revenue: number; promos: Map<string, number> }>();
-  for (const row of ds.salesByProduct.get(productId) ?? []) {
-    if (st && row.storeId !== st.storeId) continue;
-    const w = byWeek.get(row.date) ?? { units: 0, revenue: 0, promos: new Map() };
-    w.units += row.units;
-    w.revenue += row.units * row.price;
-    if (row.promoId) w.promos.set(row.promoId, (w.promos.get(row.promoId) ?? 0) + 1);
-    byWeek.set(row.date, w);
-  }
-
-  const promoNames = new Map(ds.promos.map((p) => [p.promoId, p.name]));
-  const points: TrendPoint[] = [...byWeek.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, w]) => {
-      // if several stores run different promos, report the most widespread one
-      const promoId = [...w.promos.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      return {
-        week,
-        units: w.units,
-        price: Math.round((w.revenue / w.units) * 100) / 100, // units-weighted average price
-        promoId,
-        promoName: promoId ? (promoNames.get(promoId) ?? null) : null,
-      };
-    });
-
-  return { productId, productName: product.name, store: st ? st.city : "All stores", points };
-}
-
-// ---------------------------------------------------------- product search
-
 /** Every product whose name or category contains EVERY word of the query (case-insensitive). */
-function matchProducts(query: string, category?: string): Product[] {
-  const ds = load();
+function matchProducts(ds: Dataset, query: string, category?: string): Product[] {
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   return ds.products
     .filter((p) => !category || p.category === category)
@@ -203,29 +150,100 @@ function matchProducts(query: string, category?: string): Product[] {
     });
 }
 
-export function searchProducts(query: string, category?: string, limit = 10): Product[] {
-  return matchProducts(query, category).slice(0, limit);
+// ------------------------------------------------------------------- store
+
+/** All the questions the tools can ask, over one data directory. Loaded lazily on first use, then cached. */
+export function createDataStore(dir: string = DATA_DIR) {
+  let cache: Dataset | undefined;
+  const load = () => (cache ??= loadDataset(dir));
+
+  return {
+    /** Promotions overlapping [from, to], ranked by uplift (highest first). */
+    topPromotions(from: string, to: string, limit: number): PromoResult[] {
+      const ds = load();
+      return ds.promos
+        .filter((p) => p.start <= to && p.end >= from)
+        .flatMap((p) => {
+          const m = computeUplift(ds, p);
+          return m ? [{ ...p, ...m }] : [];
+        })
+        .sort((a, b) => b.uplift - a.uplift)
+        .slice(0, limit);
+    },
+
+    /** Weekly series for one product, for one store or (store omitted) summed over all stores. */
+    salesTrend(productId: string, store?: string) {
+      const ds = load();
+      const product = ds.productsById.get(productId);
+      if (!product) throw new UserError(`Unknown product ${productId}. Call search_products first to find a valid product ID.`);
+      const st = store === undefined ? undefined : resolveStore(ds, store);
+
+      const byWeek = new Map<string, { units: number; revenue: number; promos: Map<string, number> }>();
+      for (const row of ds.salesByProduct.get(productId) ?? []) {
+        if (st && row.storeId !== st.storeId) continue;
+        const w = byWeek.get(row.date) ?? { units: 0, revenue: 0, promos: new Map() };
+        w.units += row.units;
+        w.revenue += row.units * row.price;
+        if (row.promoId) w.promos.set(row.promoId, (w.promos.get(row.promoId) ?? 0) + 1);
+        byWeek.set(row.date, w);
+      }
+
+      const promoNames = new Map(ds.promos.map((p) => [p.promoId, p.name]));
+      const points: TrendPoint[] = [...byWeek.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([week, w]) => {
+          // if several stores run different promos, report the most widespread one
+          const promoId = [...w.promos.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+          return {
+            week,
+            units: w.units,
+            price: w.units > 0 ? Math.round((w.revenue / w.units) * 100) / 100 : 0, // units-weighted average price
+            promoId,
+            promoName: promoId ? (promoNames.get(promoId) ?? null) : null,
+          };
+        });
+
+      return { productId, productName: product.name, store: st ? st.city : "All stores", points };
+    },
+
+    searchProducts(query: string, category?: string, limit = 10): Product[] {
+      return matchProducts(load(), query, category).slice(0, limit);
+    },
+
+    /** Same search, plus the total match count (the picker shows "12 of 30"). */
+    searchProductsPage(query: string, category: string | undefined, limit: number) {
+      const all = matchProducts(load(), query, category);
+      return { products: all.slice(0, limit), total: all.length };
+    },
+
+    listStores(): Store[] {
+      return load().stores.map((s) => ({ ...s }));
+    },
+
+    /** Promotions whose date range overlaps [from, to], optionally for one category, ordered by start date. */
+    promoCalendar(from: string, to: string, category?: string): CalendarPromo[] {
+      return load()
+        .promos.filter((p) => p.start <= to && p.end >= from && (!category || p.category === category))
+        .sort((a, b) => a.start.localeCompare(b.start) || a.promoId.localeCompare(b.promoId))
+        .map((p) => ({ ...p }));
+    },
+  };
 }
 
-/** Same search, plus the total match count (the picker shows "12 of 30"). */
-export function searchProductsPage(query: string, category: string | undefined, limit: number) {
-  const all = matchProducts(query, category);
-  return { products: all.slice(0, limit), total: all.length };
-}
+export type DataStore = ReturnType<typeof createDataStore>;
 
-export function listStores(): { storeId: string; city: string; region: string }[] {
-  return load().stores.map((s) => ({ ...s }));
-}
+/** The real dataset (./data). Nothing is read until the first call. */
+export const defaultStore: DataStore = createDataStore();
 
-// ------------------------------------------------------------ calendar + clashes
+// Backwards-compatible function exports: same names as before, bound to the default store.
+export const topPromotions = defaultStore.topPromotions;
+export const salesTrend = defaultStore.salesTrend;
+export const searchProducts = defaultStore.searchProducts;
+export const searchProductsPage = defaultStore.searchProductsPage;
+export const listStores = defaultStore.listStores;
+export const promoCalendar = defaultStore.promoCalendar;
 
-/** Promotions whose date range overlaps [from, to], optionally for one category, ordered by start date. */
-export function promoCalendar(from: string, to: string, category?: string): CalendarPromo[] {
-  return load()
-    .promos.filter((p) => p.start <= to && p.end >= from && (!category || p.category === category))
-    .sort((a, b) => a.start.localeCompare(b.start) || a.promoId.localeCompare(b.promoId))
-    .map((p) => ({ ...p }));
-}
+// ------------------------------------------------------------ clashes (pure)
 
 const maxIso = (a: string, b: string) => (a > b ? a : b);
 const minIso = (a: string, b: string) => (a < b ? a : b);

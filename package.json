@@ -14,6 +14,9 @@
     "start:http": "node dist/server/http.js",
     "start": "node dist/server/stdio.js",
     "typecheck": "tsc -p tsconfig.scripts.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "pretest": "npm run build:views",
     "smoke": "tsx scripts/smoke-stdio.ts",
     "inspect": "npx @modelcontextprotocol/inspector@latest npx tsx src/server/stdio.ts"
   },
@@ -44,15 +47,20 @@
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.12",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.3.0",
+    "jsdom": "^28.1.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vite-plugin-singlefile": "^2.3.4"
+    "vite-plugin-singlefile": "^2.3.4",
+    "vitest": "^5.1.0"
   }
 }
