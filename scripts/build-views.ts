@@ -13,7 +13,7 @@ import { build } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ALL_VIEWS = ["table", "trend"]; // add "picker", "calendar" on Days 5-6
+const ALL_VIEWS = ["table", "trend", "picker"]; // add "calendar" on Day 6
 
 const requested = process.argv.slice(2);
 for (const view of requested.length ? requested : ALL_VIEWS) {

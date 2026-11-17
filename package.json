@@ -13,7 +13,7 @@
     "start": "node dist/server/stdio.js",
     "typecheck": "tsc -p tsconfig.scripts.json",
     "smoke": "tsx scripts/smoke-stdio.ts",
-    "inspect": "npx @modelcontextprotocol/inspector npx tsx src/server/stdio.ts"
+    "inspect": "npx @modelcontextprotocol/inspector@latest npx tsx src/server/stdio.ts"
   },
   "repository": {
     "type": "git",

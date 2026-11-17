@@ -13,6 +13,7 @@ const VIEWS_DIR = path.join(ROOT, "dist/views");
 
 export const TABLE_URI = "ui://promolite/top-promotions";
 export const TREND_URI = "ui://promolite/sales-trend";
+export const PICKER_URI = "ui://promolite/picker";
 
 async function readView(name: string): Promise<string> {
   try {
@@ -32,4 +33,5 @@ function registerView(server: McpServer, title: string, uri: string, folder: str
 export function registerViews(server: McpServer) {
   registerView(server, "Top promotions table", TABLE_URI, "table", "Sortable table of promotions ranked by uplift");
   registerView(server, "Sales trend chart", TREND_URI, "trend", "Weekly sales line with promotion weeks shaded");
+  registerView(server, "Product picker", PICKER_URI, "picker", "Search and select exact products and stores");
 }

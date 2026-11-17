@@ -87,3 +87,36 @@ export const SearchProductsOutput = z.object({
   products: z.array(ProductSchema),
 });
 export type SearchProductsOutput = z.infer<typeof SearchProductsOutput>;
+
+// --------------------------------------------------- picker (Day 5)
+export const StoreSchema = z.object({
+  storeId: z.string(),
+  city: z.string(),
+  region: z.string(),
+});
+export type Store = z.infer<typeof StoreSchema>;
+
+/** Model-visible tool that opens the picker. Both fields only PRE-FILL the picker. */
+export const PickProductsInput = z.object({
+  query: z.string().optional().describe("Optional words to pre-fill the search box, e.g. 'olive oil'"),
+  category: CategorySchema.optional().describe("Optional category to pre-select"),
+});
+export const PickProductsOutput = z.object({
+  query: z.string(),
+  category: CategorySchema.nullable(),
+  categories: z.array(z.string()),
+  stores: z.array(StoreSchema),
+});
+export type PickProductsOutput = z.infer<typeof PickProductsOutput>;
+
+/** App-only tool: called by the picker view while the user types. The model never sees it. */
+export const SearchProductsUiInput = z.object({
+  query: z.string().default("").describe("Search words; empty returns the first products of the catalog"),
+  category: CategorySchema.optional(),
+  limit: z.number().int().min(1).max(50).default(12),
+});
+export const SearchProductsUiOutput = z.object({
+  products: z.array(ProductSchema),
+  total: z.number().describe("How many products match in total (may exceed products.length)"),
+});
+export type SearchProductsUiOutput = z.infer<typeof SearchProductsUiOutput>;

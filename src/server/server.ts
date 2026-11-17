@@ -1,12 +1,12 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
-import { salesTrend, searchProducts, topPromotions, UserError } from "./data.js";
+import { listStores, salesTrend, searchProducts, searchProductsPage, topPromotions, UserError } from "./data.js";
 import {
-  SalesTrendInput, SalesTrendOutput, SearchProductsInput, SearchProductsOutput,
-  TopPromotionsInput, TopPromotionsOutput,
+  CATEGORIES, PickProductsInput, PickProductsOutput, SalesTrendInput, SalesTrendOutput, SearchProductsInput,
+  SearchProductsOutput, SearchProductsUiInput, SearchProductsUiOutput, TopPromotionsInput, TopPromotionsOutput,
 } from "./schemas.js";
-import { registerViews, TABLE_URI, TREND_URI } from "./ui.js";
+import { PICKER_URI, registerViews, TABLE_URI, TREND_URI } from "./ui.js";
 
 const text = (t: string) => [{ type: "text" as const, text: t }];
 const pct = (n: number) => `${n >= 0 ? "+" : ""}${(n * 100).toFixed(0)}%`;
@@ -23,7 +23,7 @@ async function guarded<T extends object>(run: () => T | Promise<T>) {
 
 /** Builds the MCP server. Transport-agnostic: stdio.ts (and http.ts on Day 3) connect it. */
 export function createServer() {
-  const server = new McpServer({ name: "promolite", version: "0.4.0" });
+  const server = new McpServer({ name: "promolite", version: "0.5.0" });
 
   server.registerTool(
     "ping",
@@ -130,6 +130,60 @@ export function createServer() {
         return {
           content: text(`${products.length} product(s) matching "${query}":\n${lines.join("\n")}`),
           structuredContent: { products },
+        };
+      }),
+  );
+
+  // ---------------------------------------------------------------- Day 5: picker
+  // Model-visible: the model calls this when the user is vague ("compare some dairy products"), and the host
+  // shows the picker view. The text answer below is the fallback for hosts that cannot show views.
+  registerAppTool(
+    server,
+    "pick_products",
+    {
+      title: "Pick products and stores",
+      description:
+        "Opens an interactive picker so the USER can choose exact products and stores. Use when the request is vague " +
+        "or ambiguous (for example 'compare some dairy products' or 'which olive oil?') instead of guessing product IDs. " +
+        "The user's choice comes back to the conversation as a message with exact product IDs, which you can then pass " +
+        "to sales_trend. Optionally pre-fill a search query and/or category.",
+      inputSchema: PickProductsInput,
+      outputSchema: PickProductsOutput,
+      _meta: { ui: { resourceUri: PICKER_URI } },
+    },
+    ({ query, category }) =>
+      guarded(() => {
+        const stores = listStores();
+        const structured = { query: query ?? "", category: category ?? null, categories: [...CATEGORIES], stores };
+        return {
+          content: text(
+            "An interactive product picker was opened for the user. If your host cannot display it, use search_products " +
+            "to find product IDs instead.\n" +
+            `Categories: ${CATEGORIES.join(", ")}.\n` +
+            `Stores: ${stores.map((s) => `${s.storeId} ${s.city}`).join(", ")}.`),
+          structuredContent: structured,
+        };
+      }),
+  );
+
+  // App-only: `visibility: ["app"]` means only the picker view may call it (through the host, with NO model in the
+  // loop). The server still LISTS it in tools/list; a host that supports MCP Apps hides it from the model.
+  registerAppTool(
+    server,
+    "search_products_ui",
+    {
+      title: "Search products (picker backend)",
+      description: "Backend for the product picker view: searches products as the user types. Not meant for the model.",
+      inputSchema: SearchProductsUiInput,
+      outputSchema: SearchProductsUiOutput,
+      _meta: { ui: { visibility: ["app"] } },
+    },
+    ({ query, category, limit }) =>
+      guarded(() => {
+        const { products, total } = searchProductsPage(query, category, limit);
+        return {
+          content: text(`${products.length} of ${total} product(s) match "${query}".`),
+          structuredContent: { products, total },
         };
       }),
   );

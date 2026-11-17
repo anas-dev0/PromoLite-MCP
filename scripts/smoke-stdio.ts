@@ -22,7 +22,9 @@ const call = async (title: string, name: string, a: Record<string, unknown>, ful
 console.log(`MODE: ${built ? "built dist/" : "tsx src/"}`);
 const tools = (await client.listTools()).tools;
 console.log("TOOLS:", tools.map((t) => t.name).join(", "));
-console.log("top_promotions _meta:", JSON.stringify(tools.find((t) => t.name === "top_promotions")?._meta));
+for (const name of ["top_promotions", "pick_products", "search_products_ui"]) {
+  console.log(`${name} _meta:`, JSON.stringify(tools.find((t) => t.name === name)?._meta));
+}
 const resources = (await client.listResources()).resources;
 console.log("RESOURCES:", resources.map((r) => `${r.uri} (${r.mimeType})`).join(", "));
 for (const r of resources) {
@@ -37,6 +39,9 @@ await call("search 'dairy'", "search_products", { query: "dairy" }, true);
 await call("search nothing", "search_products", { query: "zzzz" }, true);
 await call("trend olive oil 1L in Sfax", "sales_trend", { productId: "P021", store: "Sfax" });
 await call("trend all stores", "sales_trend", { productId: "P021" });
+await call("pick_products (opens the picker)", "pick_products", { query: "olive" }, true);
+await call("search_products_ui (app-only, called directly)", "search_products_ui", { query: "olive", limit: 5 }, true);
+await call("search_products_ui empty query = browse", "search_products_ui", { query: "" }, false);
 await call("ERR unknown product", "sales_trend", { productId: "P999" }, true);
 await call("ERR unknown store", "sales_trend", { productId: "P021", store: "Paris" }, true);
 await call("ERR dates reversed", "top_promotions", { from: "2025-06-30", to: "2025-04-01" }, true);

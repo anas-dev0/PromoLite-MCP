@@ -191,8 +191,8 @@ export function salesTrend(productId: string, store?: string) {
 
 // ---------------------------------------------------------- product search
 
-/** Every word of the query must appear in the product's name or category (case-insensitive). */
-export function searchProducts(query: string, category?: string, limit = 10): Product[] {
+/** Every product whose name or category contains EVERY word of the query (case-insensitive). */
+function matchProducts(query: string, category?: string): Product[] {
   const ds = load();
   const words = query.toLowerCase().split(/\s+/).filter(Boolean);
   return ds.products
@@ -200,6 +200,19 @@ export function searchProducts(query: string, category?: string, limit = 10): Pr
     .filter((p) => {
       const haystack = `${p.name} ${p.category}`.toLowerCase();
       return words.every((w) => haystack.includes(w));
-    })
-    .slice(0, limit);
+    });
+}
+
+export function searchProducts(query: string, category?: string, limit = 10): Product[] {
+  return matchProducts(query, category).slice(0, limit);
+}
+
+/** Same search, plus the total match count (the picker shows "12 of 30"). */
+export function searchProductsPage(query: string, category: string | undefined, limit: number) {
+  const all = matchProducts(query, category);
+  return { products: all.slice(0, limit), total: all.length };
+}
+
+export function listStores(): { storeId: string; city: string; region: string }[] {
+  return load().stores.map((s) => ({ ...s }));
 }

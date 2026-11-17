@@ -8,7 +8,7 @@ import "../shared/styles.css";
 import { useToolView } from "../shared/useToolView.js";
 
 function App() {
-  const state = useToolView("PromoLite sales trend", SalesTrendOutput);
+  const { state } = useToolView("PromoLite sales trend", SalesTrendOutput);
   if (state.kind === "loading") return <LoadingState label="Loading sales trend…" />;
   if (state.kind === "error") return <ErrorState message={state.message} />;
 

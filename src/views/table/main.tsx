@@ -10,7 +10,7 @@ import "../shared/styles.css";
 import { useToolView } from "../shared/useToolView.js";
 
 function App() {
-  const state = useToolView("PromoLite top promotions", TopPromotionsOutput);
+  const { state } = useToolView("PromoLite top promotions", TopPromotionsOutput);
   if (state.kind === "loading") return <LoadingState label="Loading promotions…" />;
   if (state.kind === "error") return <ErrorState message={state.message} />;
   return (
