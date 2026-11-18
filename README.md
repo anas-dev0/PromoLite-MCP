@@ -14,7 +14,7 @@ trend chart, product picker, promotions calendar with clash detection) instead o
 
 ## Try it in Claude in 30 seconds
 
-> **Public URL:** `https://<your-host>/mcp` <!-- TODO: fill in once deployed (see docs/DEPLOY.md) -->
+> **Public URL:** `https://promolite.duckdns.org/mcp`
 
 1. In Claude, open the connector settings and choose **Add custom connector**.
 2. Paste the URL above.
